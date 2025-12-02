@@ -87,26 +87,24 @@ Agentic-AI/
 ├── README.md
 ├── requirements.txt
 ├── .env.example
-├── database/                     # base de datos
-│   └── ventas.csv                # Datos de ejemplo de ventas
+├── .env                          # Variables de entorno (API keys, etc.)
+├── .gitignore
+├── sales.db                      # Base de datos SQLite generada
+├── database/
+│   ├── DB.py                     # Script para crear la base de datos desde CSV
+│   └── callingDB.py              # Ejemplos de operaciones CRUD
 ├── src/
 │   ├── __init__.py
 │   ├── main.py                   # Punto de entrada de la aplicación
+│   ├── example.py
 │   ├── agent/
-│   │   ├── __init__.py
-│   │   └── sales_agent.py        # Lógica del agente de ventas
-│   ├── mcp/
-│   │   ├── __init__.py
-│   │   └── mcp.py                # Conector MCP para base de datos SQL
-│   ├── actions/
-│   │   ├── __init__.py
-│   │   ├── charts.py             # Generación de gráficos
-│   │   └── file_export.py        # Exportación a CSV/Excel
-│   └── utils/
-│       ├── __init__.py
-│       └── helpers.py            # Funciones auxiliares
-├── outputs/
-    └── .gitkeep                  # Carpeta para archivos exportados
+│   │   └── sqlite_agent.py       # Agente con MCP para SQLite y generación de gráficos
+│   └── output/
+│       ├── csv_files/            # Archivos CSV exportados
+│       │   └── ventas_por_vendedor.csv
+│       └── graphs/               # Gráficos generados
+│           ├── top_products_medellin.png
+│           └── ventas_bogota_pie_chart.png
 
 
 ## ⏱ Tiempo estimado
