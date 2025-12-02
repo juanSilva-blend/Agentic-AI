@@ -91,10 +91,10 @@ sqlite_client = MCPClient(
 fs_client = MCPClient(
     lambda: stdio_client(
         StdioServerParameters(
-            command="npx", # <--- CAMBIO AQUÍ
+            command="npx",
             args=[
                 "-y", 
-                "@modelcontextprotocol/server-filesystem", # <--- NOMBRE OFICIAL DE NPM
+                "@modelcontextprotocol/server-filesystem", 
                 "./src/output/csv_files" # Carpeta permitida
             ]
         )
