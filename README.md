@@ -88,7 +88,6 @@ Agentic-AI/
 ├── requirements.txt
 ├── .env.example
 ├── database/                     # base de datos
-├── data/
 │   └── ventas.csv                # Datos de ejemplo de ventas
 ├── src/
 │   ├── __init__.py
