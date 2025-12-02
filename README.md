@@ -95,9 +95,9 @@ Agentic-AI/
 │   ├── agent/
 │   │   ├── __init__.py
 │   │   └── sales_agent.py        # Lógica del agente de ventas
-│   ├── connectors/
+│   ├── mcp/
 │   │   ├── __init__.py
-│   │   └── sql_connector.py      # Conector MCP para base de datos SQL
+│   │   └── mcp.py                # Conector MCP para base de datos SQL
 │   ├── actions/
 │   │   ├── __init__.py
 │   │   ├── charts.py             # Generación de gráficos
