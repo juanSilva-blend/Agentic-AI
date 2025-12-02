@@ -80,6 +80,36 @@ Agente capaz de:
     ```
 * **Agente:** Entrega respuesta textual y opcional gráfico.
 
+## 📁 Estructura del proyecto
+
+```
+Agentic-AI/
+├── README.md
+├── requirements.txt
+├── .env.example
+├── database/                     # base de datos
+├── data/
+│   └── ventas.csv                # Datos de ejemplo de ventas
+├── src/
+│   ├── __init__.py
+│   ├── main.py                   # Punto de entrada de la aplicación
+│   ├── agent/
+│   │   ├── __init__.py
+│   │   └── sales_agent.py        # Lógica del agente de ventas
+│   ├── connectors/
+│   │   ├── __init__.py
+│   │   └── sql_connector.py      # Conector MCP para base de datos SQL
+│   ├── actions/
+│   │   ├── __init__.py
+│   │   ├── charts.py             # Generación de gráficos
+│   │   └── file_export.py        # Exportación a CSV/Excel
+│   └── utils/
+│       ├── __init__.py
+│       └── helpers.py            # Funciones auxiliares
+├── outputs/
+    └── .gitkeep                  # Carpeta para archivos exportados
+
+
 ## ⏱ Tiempo estimado
 3–4 horas.
 
@@ -96,3 +126,5 @@ Por favor sigan la dinámica que se ha recalcado:
 2.  **Actividades:** Posteriormente diluciden *grosso modo* las actividades.
 3.  **Trabajo en grupo:** Traten de trabajar la parte gruesa entre los 2, 3 o 4 integrantes.
 4.  **División:** Posteriormente, si pueden dividir, planeen para hacerlo en actividades muy identificadas y granulares.
+
+
