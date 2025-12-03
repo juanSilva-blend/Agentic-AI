@@ -1,11 +1,21 @@
 from strands import Agent,tool
 from strands.tools.mcp import MCPClient
+from strands.models import BedrockModel
 from mcp import stdio_client, StdioServerParameters
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import json
+
+MODEL="qwen.qwen3-next-80b-a3b"
+
+bedrock_model = BedrockModel(
+            model_id=MODEL,
+            temperature=0.3,
+            top_p=0.8,
+                        
+        )
 
 SYSTEM_PROMPT = """You are an expert data analyst. Use the tools at your disposal to answer the user's questions. 
 In the sales database there's only one table called sales. 
@@ -118,7 +128,7 @@ def get_agent_response(prompt: str) -> str:
     with sqlite_client, fs_client:
         agent = Agent(
             tools=sqlite_client.list_tools_sync() + fs_client.list_tools_sync() + [create_bar_chart, create_line_chart, create_pie_chart],
-            model="qwen.qwen3-next-80b-a3b"
+            model=bedrock_model,
         )
         full_prompt = f"{SYSTEM_PROMPT}\n\nUser request: {prompt}"
         response = agent(full_prompt)
@@ -129,7 +139,7 @@ async def get_agent_response_async(prompt: str) -> str:
     with sqlite_client, fs_client:
         agent = Agent(
             tools=sqlite_client.list_tools_sync() + fs_client.list_tools_sync() + [create_bar_chart, create_line_chart, create_pie_chart],
-            model="qwen.qwen3-next-80b-a3b"
+            model=bedrock_model,
         )
         full_prompt = f"{SYSTEM_PROMPT}\n\nUser request: {prompt}"
         result = await agent.invoke_async(full_prompt)
