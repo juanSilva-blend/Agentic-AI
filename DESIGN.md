@@ -113,6 +113,10 @@ sqlite_client = MCPClient(
 - Chart visualization
 - CSV download capability
 
+**Status (Recent):**
+- A Streamlit-based UI was implemented at `src/main.py` with tabs for Analysis, Data Explorer, Visualizations and Help. The repository includes a `run.sh` helper that detects the project virtualenv and runs Streamlit via `python -m streamlit`.
+- Note: importing the agent currently triggers MCP clients at import-time (see Operational Notes). See recommendations below to avoid import-time side effects.
+
 ---
 
 ## 4. Data Flow Design
@@ -190,6 +194,19 @@ MCPClient(
     )
 )
 ```
+
+**Operational Note (runtime issues observed):**
+- On some systems the repository may not have the `uvx` executable available in PATH, which causes the MCP client initialization to fail during import (FileNotFoundError for `uvx`). This project reproduced that error when starting Streamlit because `src/agent/sqlite_agent.py` starts MCP clients during module import.
+
+**Workarounds & Recommendations:**
+- Install `uvx` globally via npm (requires Node.js):
+  ```bash
+  sudo npm install -g @modelcontextprotocol/uvx || sudo npm install -g uvx
+  ```
+- Use `npx` to invoke the MCP server without a global install, e.g. set `command='npx'` and `args=['-y','@modelcontextprotocol/mcp-server-sqlite','--db-path','./sales.db']`.
+- Better: refactor the agent to lazily initialize MCP clients (avoid `with sqlite_client, fs_client:` at import-time). Provide a `get_agent()` factory that starts clients on-demand and handles errors cleanly.
+
+These changes improve robustness in developer environments and CI where global npm packages are not guaranteed.
 
 ---
 
@@ -333,16 +350,9 @@ Agentic-AI/
 
 ### Limitations ⚠️
 
-1. **Current Scope**
    - Supports basic SQL (SELECT, GROUP BY, ORDER BY, LIMIT)
-   - No INSERT/UPDATE/DELETE operations
    - Fixed chart types (bar, line, pie)
-   - No real-time data streaming
 
-2. **Security Considerations**
-   - File access restricted to `src/output/`
-   - SQL injection prevention via MCP
-   - No user authentication (future enhancement)
 
 ---
 
@@ -354,28 +364,20 @@ Agentic-AI/
 - ✅ SQLAlchemy setup
 
 ### Phase 2: Agent Core (In Progress)
-- 🔄 Strands agent configuration
-- 🔄 MCP client integration
-- 🔄 Tool definitions
+- 🔄 Strands agent configuration (agent scaffold implemented in `src/agent/sqlite_agent.py`)
+- ⚠️ MCP client integration: MCP clients are configured but currently start at module import which can cause startup failures if external executables (e.g., `uvx`) are missing.
+- 🔄 Tool definitions (chart tools implemented)
 
-### Phase 3: Visualization (Planned)
-- ⏳ Chart generation tools
-- ⏳ Output directory management
-- ⏳ Result aggregation
+### Phase 3: Visualization (Complete)
+- ✅ Chart generation tools (`create_bar_chart`, `create_line_chart`, `create_pie_chart`) implemented
+- ✅ Output directory layout created (`src/output/graphs`, `src/output/csv_files`)
+- ⏳ Result aggregation (fine-tuning UX and formats)
 
-### Phase 4: UI (Planned)
-- ⏳ Streamlit interface
-- ⏳ Query input form
-- ⏳ Results display
-- ⏳ File download functionality
+### Phase 4: UI (Complete)
+- ✅ Streamlit interface implemented at `src/main.py` with tabs for Analysis, Data Explorer, Visualizations and Help
+- ✅ Query input form, result display, and CSV download functionality present
+- ✅ `run.sh` helper and `.env` support added for easier local runs
 
-### Phase 5: Testing & Polish (Planned)
-- ⏳ Unit tests
-- ⏳ Integration tests
-- ⏳ Documentation
-- ⏳ Error handling
-
----
 
 ## 11. API & Tool Contracts
 
@@ -393,6 +395,45 @@ Output:
 
 Side Effect:
   - Saves PNG file to src/output/graphs/{filename}
+```
+
+---
+
+## 11.1 Operational Notes & Runbook
+
+This section captures actionable operational steps, recent runtime observations, and quick remediation steps to get the app running locally.
+
+- Problem observed: starting Streamlit (`src/main.py`) caused an exception during import because `src/agent/sqlite_agent.py` attempts to start MCP clients using the `uvx` executable which was not found on the system.
+
+- Quick checklist to get a local dev environment running:
+  1. Ensure Python virtualenv is activated or use the project's `run.sh` which auto-detects the venv.
+  2. Install Node.js/npm if not present (Ubuntu/Debian example):
+     ```bash
+     sudo apt-get update
+     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+     sudo apt-get install -y nodejs build-essential
+     ```
+  3. Install `uvx` globally (optional) or use `npx` on-the-fly:
+     ```bash
+     sudo npm install -g @modelcontextprotocol/uvx || sudo npm install -g uvx
+     # Or prefer no-global install and rely on npx when configuring MCP clients
+     ```
+  4. If you cannot install Node globally, modify the MCP server command to use `npx` or run the server separately and point the client to it.
+  5. Recommended code changes for robustness:
+     - Add `from dotenv import load_dotenv; load_dotenv()` at the top of `src/main.py` before importing the agent to ensure environment variables are loaded early.
+     - Change `sqlite_agent.py` to read `AGENT_MODEL` from `os.getenv('AGENT_MODEL', ...)` instead of hardcoding.
+     - Refactor agent initialization into a `get_agent()` function that starts MCP clients on-demand.
+
+- Run the app:
+  ```bash
+  ./run.sh
+  # or
+  python -m streamlit run src/main.py
+  ```
+
+These steps and code adjustments reduce the chance of startup failures and make the application easier to run in diverse environments.
+
+---
 ```
 
 ### MCP SQLite Client
@@ -418,13 +459,6 @@ Constraints:
 - JSON parsing validation
 - DataFrame type coercion with error handling
 
-### Future Enhancements:
-- User-friendly error messages
-- Fallback visualizations
-- Query validation before execution
-- Logging and monitoring
-
----
 
 ## 13. Performance Considerations
 
@@ -438,27 +472,8 @@ Constraints:
 - Chart generation time (O(n) where n = data points)
 - MCP server startup overhead
 
-### Future Improvements:
-- Query result caching
-- Async chart generation
-- Batch operations
-- Database indexing on common filters
-
----
-
 ## 14. Testing Strategy
 
-### Unit Tests (Planned):
-- Chart generation with sample data
-- MCP client initialization
-- SQL query generation
-- File I/O operations
-
-### Integration Tests (Planned):
-- End-to-end query → visualization flow
-- Agent decision making
-- MCP server communication
-- CSV export validation
 
 ### Manual Testing (Current):
 - Test agent with predefined queries
@@ -467,29 +482,7 @@ Constraints:
 
 ---
 
-## 15. Future Enhancements
-
-### Short-term:
-- [ ] Add more chart types (scatter, heatmap)
-- [ ] Implement query caching
-- [ ] Add error recovery mechanisms
-- [ ] Create configuration file for customization
-
-### Medium-term:
-- [ ] Support for multiple databases
-- [ ] User authentication & authorization
-- [ ] Query history & favorites
-- [ ] Advanced filtering UI
-
-### Long-term:
-- [ ] Real-time data streaming
-- [ ] Predictive analytics
-- [ ] Multi-language support
-- [ ] Mobile app integration
-
----
-
-## 16. Deployment Architecture
+## 15. Deployment Architecture
 
 ### Development Environment:
 ```
@@ -503,21 +496,10 @@ Local Machine
   └─ Output Directory (graphs/, csv_files/)
 ```
 
-### Production Deployment (Future):
-```
-Docker Container
-  ├─ Python Runtime
-  ├─ Streamlit Server
-  ├─ SQLite Database
-  ├─ MCP Server Instances
-  └─ Volume Mounts
-      ├─ Database File
-      └─ Output Directory
-```
 
 ---
 
-## 17. Design Principles
+## 16. Design Principles
 
 1. **Modularity:** Each component has a single responsibility
 2. **Tool-Oriented:** Agent uses composable tools via MCP
@@ -528,7 +510,7 @@ Docker Container
 
 ---
 
-## 18. Key Design Files
+## 17. Key Design Files
 
 | File | Purpose | Key Classes/Functions |
 |------|---------|----------------------|
@@ -539,14 +521,32 @@ Docker Container
 
 ---
 
-## 19. Configuration & Environment
+## 18. Configuration & Environment
 
 ### Environment Variables (.env):
 ```
-AGENT_MODEL=anthropic.claude-3-sonnet-20240229-v1:0
+# Model selection (name or local server identifier)
+AGENT_MODEL=qwen.qwen3-next-80b-a3b
+
+# MCP configuration
 MCP_SQLITE_DB=./sales.db
 MCP_FILESYSTEM_PATH=./src/output/csv_files
+MCP_TIMEOUT=120
+
+# Optional external API credentials (only required if using hosted models)
+# OPENAI_API_KEY=sk-...
+# HUGGINGFACE_HUB_TOKEN=hf_...
+# ANTHROPIC_API_KEY=claude-...
+
+# Output paths
 OUTPUT_GRAPHS_PATH=./src/output/graphs
+OUTPUT_CSV_PATH=./src/output/csv_files
+
+# Local dev flags
+ENVIRONMENT=development
+DEBUG=true
+
+# Security note: Do NOT commit your real API keys. Add .env to .gitignore.
 ```
 
 ### Dependencies (requirements.txt):
@@ -558,11 +558,23 @@ strands-agents      # Agent framework
 strands-agents-tools # Pre-built tools
 mcp                 # Model Context Protocol
 matplotlib          # Charting
+python-dotenv       # Load .env into environment
+```
+
+### Loading environment variables in code
+
+Add `python-dotenv` and load variables before importing components that rely on environment variables (for example, at the top of `src/main.py`):
+
+```python
+from dotenv import load_dotenv
+load_dotenv()
+# then import modules that read os.environ
+from agent.sqlite_agent import ...
 ```
 
 ---
 
-## 20. Summary
+## 29. Summary
 
 This Agentic-AI solution implements a **multi-tool agent architecture** that:
 
