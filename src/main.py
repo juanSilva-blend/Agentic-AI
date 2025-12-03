@@ -1,21 +1,22 @@
 import streamlit as st
 import os
 import sys
+import asyncio
 
 # Add src to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from agent.sqlite_agent import get_agent_response
+from agent.sqlite_agent import get_agent_response_async
 
 # Streamlit UI
 st.title("📊 Sales Data Analysis Agent")
 
 st.markdown("""
-Welcome! I'm your AI assistant for analyzing sales data.
+Welcome! I'm your AI assistant for analyzing sales data and creates graphs or CSVs.
 
 Ask me questions like:
 - **"Top 5 productos más vendidos en Medellín"**
-- **"Vendedor con más ventas en Bogotá"**
+- **"Vendedor con más ventas en Bogotá, hazme un gráfico circular"**
 - **"Guarda las ventas por vendedor en un archivo CSV"**
 """)
 
@@ -28,10 +29,10 @@ with st.sidebar:
     st.header("📚 Quick Queries")
     query = st.selectbox("Select a query:", [
         "Choose a query...",
-        "Top 5 productos más vendidos",
-        "Vendedor con más ventas en Bogotá",
-        "Ventas por sede",
-        "Resumen general de ventas"
+        "Top 5 productos más vendidos en Medellín",
+        "Quién fue el vendedor con más ventas en Bogotá. Genera un grafico circular para mostrar los datos",
+        "Guarda las ventas por vendedor en un archivo CSV",
+        "Haz un Resumen general de las ventas de 2025, hazme tambien un gráfico de líneas"
     ])
     
     if query != "Choose a query..." and st.button("Ask this"):
@@ -71,7 +72,7 @@ if st.session_state.get("pending_response", False):
     
     with st.spinner("Analyzing data..."):
         try:
-            response = get_agent_response(last_message)
+            response = asyncio.run(get_agent_response_async(last_message))
         except Exception as e:
             response = f"Error: {str(e)}"
     

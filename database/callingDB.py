@@ -1,40 +1,52 @@
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 
 engine = create_engine("sqlite:///sales.db")
 
-# Insert a simple example row
-example_row = pd.DataFrame([{
-    "vendedor": "Felipe Garzon",
-    "sede": "Medellín",
-    "producto": "Tablet",
-    "cantidad": 5,
-    "precio": 1500,
-    "fecha": "2025-12-02"
-}])
-example_row.to_sql("sales", engine, if_exists="append", index=False)
-print("Example row inserted!")
+# ============================================================
+# Query 1: Top 5 productos más vendidos en Medellín
+# ============================================================
+print("=" * 60)
+print("Query 1: Top 5 productos más vendidos en Medellín")
+print("=" * 60)
 
-# Query the data
-df = pd.read_sql_query("SELECT * FROM sales WHERE vendedor = 'Felipe Garzon'", engine)
-print(df)
+df_top5 = pd.read_sql_query("""
+    SELECT producto, SUM(cantidad) AS total_vendido 
+    FROM sales 
+    WHERE sede='Medellín' 
+    GROUP BY producto 
+    ORDER BY total_vendido DESC 
+    LIMIT 5
+""", engine)
+print(df_top5)
 
-# Example update - change the price for our inserted row
-with engine.connect() as conn:
-    conn.execute(text("UPDATE sales SET precio = 1800 WHERE vendedor = 'Felipe Garzon' AND producto = 'Tablet'"))
-    conn.commit()
-print("Example row updated!")
+# ============================================================
+# Query 2: Ventas por vendedor
+# ============================================================
+print("\n" + "=" * 60)
+print("Query 2: Ventas por vendedor")
+print("=" * 60)
 
-# Query to verify update
-df = pd.read_sql_query("SELECT * FROM sales WHERE vendedor = 'Felipe Garzon'", engine)
-print(df)
+df_ventas_vendedor = pd.read_sql_query("""
+    SELECT vendedor, SUM(cantidad * precio) AS total_ventas 
+    FROM sales 
+    GROUP BY vendedor
+""", engine)
+print(df_ventas_vendedor)
 
-# Example delete - remove the inserted row
-with engine.connect() as conn:
-    conn.execute(text("DELETE FROM sales WHERE vendedor = 'Felipe Garzon' AND producto = 'Tablet'"))
-    conn.commit()
-print("Example row deleted!")
+# ============================================================
+# Query 3: Vendedor con más ventas en Bogotá
+# ============================================================
+print("\n" + "=" * 60)
+print("Query 3: Vendedor con más ventas en Bogotá")
+print("=" * 60)
 
-# Query to verify deletion
-df = pd.read_sql_query("SELECT * FROM sales WHERE vendedor = 'Felipe Garzon'", engine)
-print(df)
+df_top_vendedor_bogota = pd.read_sql_query("""
+    SELECT vendedor, SUM(cantidad * precio) AS total_ventas 
+    FROM sales 
+    WHERE sede='Bogotá' 
+    GROUP BY vendedor 
+    ORDER BY total_ventas DESC 
+    LIMIT 1
+""", engine)
+print(df_top_vendedor_bogota)

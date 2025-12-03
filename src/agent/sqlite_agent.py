@@ -6,16 +6,18 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import json
-import os
 
-# System prompt for the agent
 SYSTEM_PROMPT = """You are an expert data analyst. Use the tools at your disposal to answer the user's questions. 
 In the sales database there's only one table called sales. 
 When providing tabular data, format it as a Markdown table for better readability. 
 Always include the actual results in your final response. 
 NEVER create dummy data to show, always look for actual data in the database. 
-NEVER create, change or delete rows or tables without explicit permission of the request. 
-If not specified to create a graph or save the results in a csv, create a graph you see fit to showcase the data."""
+NEVER create, change or delete rows, tables or directories without explicit permission of the request. 
+for graphs you can use the create_bar_chart, create_line_chart and create_pie_chart tools and they will do all the work, use snake case for these files and .png.
+If not specified to create a graph or save the results in a csv, create a graph you see fit to showcase the data.
+if you want to quote a graph, don't use markdown, just mention the filename of the graph saved in the ./src/output/graphs folder.
+YOUR JOB IS CRITICAL, FOLLOW THE INSTRUCTIONS TO THE LETTER AND PROVIDE THE MOST ACCURATE DATA ANALYSIS POSSIBLE.
+"""
 
 @tool
 def create_bar_chart(data: str, x_column: str, y_column: str, title: str, filename: str) -> str:
@@ -122,22 +124,16 @@ def get_agent_response(prompt: str) -> str:
         response = agent(full_prompt)
         return str(response)
 
-async def stream_agent_response(prompt: str):
-    """Stream response from the sales agent - yields text chunks"""
+async def get_agent_response_async(prompt: str) -> str:
+    """Get response from the sales agent asynchronously"""
     with sqlite_client, fs_client:
         agent = Agent(
             tools=sqlite_client.list_tools_sync() + fs_client.list_tools_sync() + [create_bar_chart, create_line_chart, create_pie_chart],
             model="qwen.qwen3-next-80b-a3b"
         )
         full_prompt = f"{SYSTEM_PROMPT}\n\nUser request: {prompt}"
-        async for event in agent.stream_async(full_prompt):
-            # Extract text from streaming events
-            if "event" in event and "contentBlockDelta" in event["event"]:
-                delta = event["event"]["contentBlockDelta"].get("delta", {})
-                if "text" in delta:
-                    yield delta["text"]
-            elif "data" in event:
-                yield event["data"]
+        result = await agent.invoke_async(full_prompt)
+        return str(result)
 
 # Run directly if executed as script
 if __name__ == "__main__":
