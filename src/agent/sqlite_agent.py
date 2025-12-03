@@ -8,6 +8,15 @@ import pandas as pd
 import json
 import os
 
+# System prompt for the agent
+SYSTEM_PROMPT = """You are an expert data analyst. Use the tools at your disposal to answer the user's questions. 
+In the sales database there's only one table called sales. 
+When providing tabular data, format it as a Markdown table for better readability. 
+Always include the actual results in your final response. 
+NEVER create dummy data to show, always look for actual data in the database. 
+NEVER create, change or delete rows or tables without explicit permission of the request. 
+If not specified to create a graph or save the results in a csv, create a graph you see fit to showcase the data."""
+
 @tool
 def create_bar_chart(data: str, x_column: str, y_column: str, title: str, filename: str) -> str:
     """
@@ -95,18 +104,43 @@ fs_client = MCPClient(
             args=[
                 "-y", 
                 "@modelcontextprotocol/server-filesystem", 
-                "./src/output/csv_files" # Carpeta permitida
+                "./src/output/csv_files"
             ]
         )
     ),
     startup_timeout=120
 )
 
+def get_agent_response(prompt: str) -> str:
+    """Get response from the sales agent"""
+    with sqlite_client, fs_client:
+        agent = Agent(
+            tools=sqlite_client.list_tools_sync() + fs_client.list_tools_sync() + [create_bar_chart, create_line_chart, create_pie_chart],
+            model="qwen.qwen3-next-80b-a3b"
+        )
+        full_prompt = f"{SYSTEM_PROMPT}\n\nUser request: {prompt}"
+        response = agent(full_prompt)
+        return str(response)
 
+async def stream_agent_response(prompt: str):
+    """Stream response from the sales agent - yields text chunks"""
+    with sqlite_client, fs_client:
+        agent = Agent(
+            tools=sqlite_client.list_tools_sync() + fs_client.list_tools_sync() + [create_bar_chart, create_line_chart, create_pie_chart],
+            model="qwen.qwen3-next-80b-a3b"
+        )
+        full_prompt = f"{SYSTEM_PROMPT}\n\nUser request: {prompt}"
+        async for event in agent.stream_async(full_prompt):
+            # Extract text from streaming events
+            if "event" in event and "contentBlockDelta" in event["event"]:
+                delta = event["event"]["contentBlockDelta"].get("delta", {})
+                if "text" in delta:
+                    yield delta["text"]
+            elif "data" in event:
+                yield event["data"]
 
-with sqlite_client, fs_client:
-    agent = Agent(tools=sqlite_client.list_tools_sync() + fs_client.list_tools_sync() + [create_bar_chart, create_line_chart, create_pie_chart], model="qwen.qwen3-next-80b-a3b")
-    prompt="Quién fue el vendedor con más ventas en Bogotá. Genera un grafico circular para mostrar los datos"
-    system_prompt=f"You are an expert data analyst. Use the tools at your disposal to answer the user's questions. in the sales database there's only one table called sales. When providing tabular data, format it as a Markdown table for better readability. Always include the actual results in your final response. NEVER create dummy data to show, always look for actual data in the database. NEVER create, change or delete rows or tables without explicit permission of the request. if not especified to create a graph or save the results in a csv, create a graph you see fit to showcase the data. request: {prompt}"
-    response = agent(system_prompt) 
+# Run directly if executed as script
+if __name__ == "__main__":
+    prompt = "Quién fue el vendedor con más ventas en Bogotá. Genera un grafico circular para mostrar los datos"
+    response = get_agent_response(prompt)
     print(response)
