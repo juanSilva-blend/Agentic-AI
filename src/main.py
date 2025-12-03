@@ -17,45 +17,52 @@ load_dotenv()
 # --- Estilos CSS Personalizados ---
 st.markdown("""
 <style>
-    /* Fondo y fuentes más limpias */
+    /* Fondo general */
     .stApp {
         background-color: #f8f9fa;
     }
+    
+    /* Headers - Forzamos color oscuro */
     .main-header {
         font-size: 2.5rem;
-        color: #1f2937;
+        color: #1f2937 !important;
         font-weight: 700;
         margin-bottom: 1rem;
     }
     .sub-header {
         font-size: 1.1rem;
-        color: #6b7280;
+        color: #6b7280 !important;
         margin-bottom: 2rem;
     }
-    /* Estilo para los mensajes del chat */
+    
     .stChatMessage {
-        background-color: white;
+        background-color: white !important;
         border-radius: 10px;
         box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         padding: 10px;
         margin-bottom: 10px;
     }
-    /* Botones de descarga más atractivos */
+    
+    /* Forzar que CUALQUIER texto dentro del chat sea gris oscuro/negro */
+    .stChatMessage p, .stChatMessage div, .stChatMessage span {
+        color: #1f2937 !important; 
+    }
+    
+    /* Botones de descarga */
     .stDownloadButton button {
-        background-color: #2563eb;
-        color: white;
+        background-color: #2563eb !important;
+        color: white !important;
         border-radius: 8px;
         border: none;
         padding: 0.5rem 1rem;
         font-weight: 600;
     }
     .stDownloadButton button:hover {
-        background-color: #1d4ed8;
-        color: white;
+        background-color: #1d4ed8 !important;
+        color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
-
 # --- Configuración de Rutas ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GRAPHS_DIR = os.path.join(BASE_DIR, "src", "output", "graphs")
